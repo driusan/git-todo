@@ -1,0 +1,58 @@
+#!/bin/sh
+set -eo pipefail
+
+gitdir=`git rev-parse --git-dir`
+rev=`git symbolic-ref HEAD`
+
+tododir="$gitdir/todos/$rev"
+
+
+pagetodo() {
+    pager="${TODO_PAGER}"
+
+    if [ -z "$pager" ]; then
+        pager="${GIT_PAGER}"
+    fi
+    if [ -z "$pager" ]; then
+        pager="${PAGER}"
+    fi
+
+    if [ -z "$pager" ]; then
+        pager='cat'
+    fi
+    if [ -z "$tododir/TODO" ]; then
+        echo "No TODOs for $rev";
+        exit 1;
+    fi
+    ${pager} "$tododir/TODO"
+    exit 0;
+}
+
+edittodo() {
+    edit="${TODO_EDITOR}"
+
+    if [ -z "$edit" ]; then
+        edit="${GIT_EDITOR}"
+    fi
+
+    if [ -z "$edit" ]; then
+        edit="${EDITOR}"
+    fi
+
+    if [ -z "$edit" ]; then
+        edit='ed'
+    fi
+    mkdir -p "$tododir"
+    touch "$tododir/TODO"
+    ${edit} "$tododir/TODO"
+    if [ ! -s "$tododir/TODO" ]; then
+        rm -rf "$tododir"
+    fi
+}
+
+if [ "$1" == "-p" ]; then
+    pagetodo;
+else
+    echo $1;
+    edittodo;
+fi
